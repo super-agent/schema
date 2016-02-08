@@ -234,6 +234,21 @@ local function Array(subType)
   return setmetatable({subType = checkType(subType)}, arrayMeta)
 end
 
+local optionalMeta = {
+  __tostring = function (self)
+    return self.alias or tostring(self.subType) .. "?"
+  end,
+  __call = function (self, name, value)
+    if value == nil then
+      return name, tostring(self)
+    end
+    return self.subType(name, value)
+  end
+}
+local function Optional(subType)
+  return setmetatable({subType = checkType(subType)}, optionalMeta)
+end
+
 local Type = setmetatable({}, {
   __tostring = function (_)
     return "Type"
@@ -345,6 +360,7 @@ return {
   Bool = Bool,
   Function = Function,
   Array = Array,
+  Optional = Optional,
   Record = Record,
   Tuple = Tuple,
   Type = Type,
