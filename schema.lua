@@ -1,6 +1,6 @@
 --[[lit-meta
   name = "creationix/schema"
-  version = "0.2.1"
+  version = "0.2.2"
   homepage = "https://github.com/creationix/lua-schema"
   description = "A runtime type-checking system to validate API functions."
   tags = {"schema", "type", "api"}
