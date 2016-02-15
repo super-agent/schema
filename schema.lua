@@ -1,6 +1,6 @@
 --[[lit-meta
   name = "creationix/schema"
-  version = "0.2.2"
+  version = "0.2.3"
   homepage = "https://github.com/creationix/lua-schema"
   description = "A runtime type-checking system to validate API functions."
   tags = {"schema", "type", "api"}
@@ -127,6 +127,8 @@ local Function = setmetatable({}, {
   end
 })
 
+local checkType
+
 local recordMeta = {
   __tostring = function (self)
     if self.alias then return self.alias end
@@ -154,6 +156,9 @@ local recordMeta = {
   end
 }
 local function Record(struct)
+  for k, v in pairs(struct) do
+    struct[k] = checkType(v)
+  end
   return setmetatable({struct = struct}, recordMeta)
 end
 
@@ -190,10 +195,13 @@ local tupleMeta = {
   end
 }
 local function Tuple(list)
+  for i = 1, #list do
+    list[i] = checkType(list[i])
+  end
   return setmetatable({list = list}, tupleMeta)
 end
 
-local function checkType(value)
+function checkType(value)
   if getmetatable(value) then
     return value
   elseif type(value) == "table" then
