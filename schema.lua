@@ -1,6 +1,6 @@
 --[[lit-meta
   name = "creationix/schema"
-  version = "1.0.0"
+  version = "1.0.1"
   homepage = "https://github.com/creationix/lua-schema"
   description = "A runtime type-checking system to validate API functions."
   tags = {"schema", "type", "api"}
@@ -11,6 +11,11 @@
 ]]
 
 local concat = table.concat
+local pack = table.pack or function (...)
+  local packed = {...}
+  packed.n = select("#", ...)
+  return packed
+end
 
 local function capitalize(name)
   return (name:gsub("^%l", string.upper))
@@ -345,7 +350,8 @@ local schemaMeta = {
     )
   end,
   __call = function (self, ...)
-    local argc = select("#", ...)
+    local args = pack(...)
+    local argc = args.n
     if argc ~= #self.inputs then
       return nil,
         string.format("%s - expects %d arguments, but %d %s sent.",
@@ -354,7 +360,6 @@ local schemaMeta = {
           argc,
           argc == 1 and "was" or "were")
     end
-    local args = {...}
     for i = 1, argc do
       local arg, typ = unpack(self.inputs[i])
       local name, expected, actual = typ(arg, args[i])
@@ -365,8 +370,8 @@ local schemaMeta = {
             name, expected, actual)
       end
     end
-    local rets = {self.fn(...)}
-    local retc = #rets
+    local rets = pack(self.fn(...))
+    local retc = rets.n
     if retc ~= #self.outputs then
       return nil,
         string.format("%s - expects %d return %s, but %d %s returned.",
