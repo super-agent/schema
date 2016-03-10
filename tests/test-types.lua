@@ -12,6 +12,7 @@ local Array = schema.Array
 local Record = schema.Record
 local Tuple = schema.Tuple
 local Type = schema.Type
+local NamedTuple = schema.NamedTuple
 local checkType = schema.checkType
 local addSchema = schema.addSchema
 
@@ -75,16 +76,25 @@ test(true, Type, Array(Bool))
 test(true, Type, Int)
 test(false, Type, "Cake")
 test(false, Type, true)
+local IntBool = NamedTuple {
+  {"a", Int},
+  {"b", Bool}
+}
+test(true, IntBool, {1, false})
+test(false, IntBool, {1, 2})
+test(false, IntBool, {1})
+test(false, IntBool, {1, false, true})
+test(false, IntBool, {true, false})
 
 p(tostring(addSchema))
 p(addSchema("bad", {false}, 2, 3))
 
-local add = assert(addSchema("add", {{"a",Int},{"b",Int}}, Int, function (a, b)
+local add = assert(addSchema("add", {{"a",Int},{"b",Int}}, {{"c",Int}}, function (a, b)
   if a == 42 then return true end
   return a + b
 end))
 print("Testing - " .. tostring(add))
-p(add(2, 3))
+p(assert(add(2, 3)))
 p(add(false, 3))
 p(add(42))
 p(add(1, 2, 3))

@@ -10,6 +10,7 @@ local Bool = Schema.Bool
 local Function = Schema.Function
 local Array = Schema.Array
 local Type = Schema.Type
+local NamedTuple = Schema.NamedTuple
 local checkType = Schema.checkType
 local addSchema = Schema.addSchema
 
@@ -19,7 +20,7 @@ local function test(typ, expected)
     p(expected)
   else
     p(typ)
-    error(string.format("Expected %s, but got %s", expected, actual))
+    error(string.format("Expected \n  %s\nbut got \n  %s", expected, actual))
   end
 end
 
@@ -33,13 +34,17 @@ test(Function, "Function")
 test(Array(Int), "Array<Int>")
 test({name=String,age=Int}, "{name: String, age: Int}")
 test({Bool,Int,Type}, "(Bool, Int, Type)")
-test(addSchema("add", {{"a",Int},{"b",Int}}, Int, print),
-  "add(a: Int, b: Int): Int")
+test(NamedTuple{
+  {"a",Int},
+  {"b",String},
+}, "(a: Int, b: String)")
+test(addSchema("add", {{"a",Int},{"b",Int}}, {{"c",Int}}, print),
+  "add (a: Int, b: Int) -> (c: Int)")
 test(addSchema("addSchema",
   { {"name",String},
     {"inputs", Array({String,Type})},
-    {"output",Type},
+    {"outputs", Array({String,Type})},
     {"fn",Function} },
-  Function, print),
-  "addSchema(name: String, inputs: Array<(String, Type)>, output: Type, fn: Function): Function"
+  { {"fn", Function} }, print),
+  "addSchema (name: String, inputs: Array<(String, Type)>, outputs: Array<(String, Type)>, fn: Function) -> (fn: Function)"
 )

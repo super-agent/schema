@@ -1,6 +1,6 @@
 --[[lit-meta
   name = "creationix/schema"
-  version = "0.2.3"
+  version = "1.0.0"
   homepage = "https://github.com/creationix/lua-schema"
   description = "A runtime type-checking system to validate API functions."
   tags = {"schema", "type", "api"}
@@ -201,6 +201,51 @@ local function Tuple(list)
   return setmetatable({list = list}, tupleMeta)
 end
 
+local namedTupleMeta = {
+  __tostring = function (self)
+    if self.alias then return self.alias end
+    local parts = {}
+    for i = 1, #self.list do
+      local name, type = unpack(self.list[i])
+      parts[i] = name .. ": " .. tostring(type)
+    end
+    return "(" .. concat(parts, ", ") .. ")"
+  end,
+  __call = function (self, name, value)
+    local t = type(value)
+    if t ~= "table" then
+      return name, tostring(self), capitalize(t)
+    end
+    if #value ~= #self.list then
+      local parts = {}
+      for i = 1, #value do
+        parts[i] = capitalize(type(value[i]))
+      end
+      return name, tostring(self), "[" .. concat(parts, ", ") .. "]"
+    end
+    for i = 1, #self.list do
+      local slotName, subType = unpack(self.list[i])
+      local v = value[i]
+      local subName, expected, actual = subType(name .. "." .. slotName, v)
+      if actual then
+        return subName, expected, actual
+      end
+    end
+    return name, tostring(self)
+  end
+}
+local function NamedTuple(list)
+  assert(type(list) == "table", "NamedTuple needs list of name/type pairs")
+  for i = 1, #list do
+    local pair = list[i]
+    assert(type(pair) == "table" and #pair == 2, "NamedTuple needs name/type pairs")
+    local name, typ = unpack(pair)
+    assert(type(name) == "string", "Keys in named tuple must be string")
+    list[i] = {name, checkType(typ)}
+  end
+  return setmetatable({list = list}, namedTupleMeta)
+end
+
 function checkType(value)
   if getmetatable(value) then
     return value
@@ -288,10 +333,15 @@ local schemaMeta = {
       local name, typ = unpack(self.inputs[i])
       parts[i] = name .. ": " .. tostring(typ)
     end
-    return string.format("%s(%s): %s",
+    local parts2 = {}
+    for i = 1, #self.outputs do
+      local name, typ = unpack(self.outputs[i])
+      parts2[i] = name .. ": " .. tostring(typ)
+    end
+    return string.format("%s (%s) -> (%s)",
       self.name,
       concat(parts, ", "),
-      tostring(self.output)
+      concat(parts2, ", ")
     )
   end,
   __call = function (self, ...)
@@ -315,18 +365,31 @@ local schemaMeta = {
             name, expected, actual)
       end
     end
-    local ret = self.fn(...)
-    local name, expected, actual = self.output("return value", ret)
-    if actual then
+    local rets = {self.fn(...)}
+    local retc = #rets
+    if retc ~= #self.outputs then
       return nil,
-        string.format("%s - expects %s to be %s, but it was %s.",
+        string.format("%s - expects %d return %s, but %d %s returned.",
           tostring(self),
-          name, expected, actual)
+          #self.outputs,
+          #self.outputs == 1 and "value" or "values",
+          retc,
+          retc == 1 and "was" or "were")
     end
-    return ret
+    for i = 1, retc do
+      local ret, typ = unpack(self.outputs[i])
+      local name, expected, actual = typ(ret, rets[i])
+      if actual then
+        return nil,
+          string.format("%s - expects %s to be %s, but it was %s.",
+            tostring(self),
+            name, expected, actual)
+      end
+    end
+    return unpack(rets)
   end
 }
-local function addSchema(name, inputs, output, fn)
+local function addSchema(name, inputs, outputs, fn)
   local newInputs = {}
   for i = 1, #inputs do
     newInputs[i] = {
@@ -334,19 +397,30 @@ local function addSchema(name, inputs, output, fn)
       checkType(inputs[i][2])
     }
   end
+  local newOutputs = {}
+  for i = 1, #outputs do
+    newOutputs[i] = {
+      outputs[i][1],
+      checkType(outputs[i][2])
+    }
+  end
   return setmetatable({
     name = name,
     inputs = newInputs,
-    output = checkType(output),
+    outputs = newOutputs,
     fn = fn,
   }, schemaMeta)
 end
 
 -- Make addSchema typecheck itself.
-addSchema = assert(addSchema("addSchema",
-  {{"name",String},{"inputs", Array({String,Type})},{"output",Type}, {"fn",Function}},
-  Function,
-  addSchema))
+addSchema = assert(addSchema("addSchema", {
+  {"name",String},
+  {"inputs", Array({String,Type})},
+  {"outputs", Array({String,Type})},
+  {"fn",Function}
+}, {
+  {"fn",Function}
+}, addSchema))
 
 local function makeAlias(name, typ)
   typ = checkType(typ)
@@ -371,6 +445,7 @@ return {
   Optional = Optional,
   Record = Record,
   Tuple = Tuple,
+  NamedTuple = NamedTuple,
   Type = Type,
   checkType = checkType,
   addSchema = addSchema,

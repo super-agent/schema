@@ -31,12 +31,12 @@ end
 
 -- Add runtime type checking and error reporting.
 add = assert(addSchema(
-  "add",
-  {
+  "add", {
     {"a",Int},
     {"b",Int}
+  }, {
+    {"c",Int}
   },
-  Int,
   add
 ))
 ```
@@ -52,9 +52,9 @@ function as seen in this luvit repl session:
 > add = function(a,b) return a + b end
 > add
 function: 0x05f31020
-> add = addSchema("add",{{"a",Int},{"b",Int}},Int,add)
+> add = addSchema("add",{{"a",Int},{"b",Int}},{{"c",Int}},add)
 > tostring(add)
-'add(a: Int, b: Int): Int'
+'add (a: Int, b: Int) -> (c: Int)'
 ```
 
 The new function works just like the old one, except it checks types and returns
@@ -65,9 +65,9 @@ to raise an error.
 > add(1, 2)
 3
 > add("one", "two")
-nil	'add(a: Int, b: Int): Int - expects a to be Int, but it was String.'
+nil	'add (a: Int, b: Int) -> (c: Int) - expects a to be Int, but it was String.'
 > assert(add(1, "two"))
-add(a: Int, b: Int): Int - expects b to be Int, but it was String.
+add (a: Int, b: Int) -> (c: Int) - expects b to be Int, but it was String.
 stack traceback:
 	[builtin#2]: at 0x01030b64c0
 	[C]: in function 'xpcall'
@@ -76,7 +76,8 @@ stack traceback:
 ```
 
 The `__tostring` is used internally to generate the nice error messages, but it
-can also be used to generate API docs for your service when using `creationix/schema` to typecheck your public interfaces.
+can also be used to generate API docs for your service when using
+`creationix/schema` to typecheck your public interfaces.
 
 ## Built-in Types
 
@@ -104,6 +105,10 @@ can also be used to generate API docs for your service when using `creationix/sc
 - `Tuple` - Match a table being used as a tuple.  For example `{String, Int}`
   will match only tables with length 2 who's have matching typed values.
 
+- `NamedTuple` - Match a table being used as a tuple, but with named positions.
+  This is the same format as argument and return values in schema definitions.
+  For example `{{"name",String},{"age",Int}}`
+
 - `Type` - Matches a type.  This means it could be a record or tuple literal or
   a special table with the `__typeName` metamethod.
 
@@ -112,12 +117,14 @@ can also be used to generate API docs for your service when using `creationix/sc
 There is a utility function `addSchema` that has the following schema signature which can be obtained by simply using `tostring(addSchema)`:
 
 ```ts
-addSchema(
+addSchema (
   name: String,
   inputs: Array<(String, Type)>,
-  output: Type,
+  outputs: Array<(String, Type)>,
   fn: Function
-): Function
+): (
+  fn: Function
+)
 ```
 
 The `addSchema` function typechecks itself using the following lua code.
@@ -128,7 +135,7 @@ addSchema = assert(addSchema(
   {
     {"name", String},
     {"inputs", Array({String,Type})},
-    {"output", Type},
+    {"outputs", Array({String,Type})},
     {"fn", Function}
   },
   Function,
