@@ -1,6 +1,6 @@
 --[[lit-meta
   name = "creationix/schema"
-  version = "1.0.1"
+  version = "1.0.2"
   homepage = "https://github.com/creationix/lua-schema"
   description = "A runtime type-checking system to validate API functions."
   tags = {"schema", "type", "api"}
@@ -125,8 +125,11 @@ local Function = setmetatable({}, {
   end,
   __call = function (_, name, value)
     local t = type(value)
-    if t ~= "function" and not getmetatable(value).__call then
-      return name, "Function", capitalize(t)
+    if t ~= "function" then
+      local meta = getmetatable(value)
+      if not (meta and meta.__call) then
+        return name, "Function", capitalize(t)
+      end
     end
     return name, "Function"
   end
