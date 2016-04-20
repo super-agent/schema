@@ -1,6 +1,6 @@
 --[[lit-meta
   name = "creationix/schema"
-  version = "1.0.2"
+  version = "1.1.0"
   homepage = "https://github.com/creationix/lua-schema"
   description = "A runtime type-checking system to validate API functions."
   tags = {"schema", "type", "api"}
@@ -105,6 +105,21 @@ local String = setmetatable({}, {
     return name, "String"
   end
 })
+
+local function CustomString(typeName, checker)
+  return setmetatable({}, {
+    __tostring = function(self)
+      return self.alias or typeName
+    end,
+    __call = function (_, name, value)
+      local t = type(value)
+      if t ~= "string" or not checker(value) then
+        return name, typeName, capitalize(t)
+      end
+      return name, typeName
+    end
+  })
+end
 
 local Bool = setmetatable({}, {
   __tostring = function(self)
@@ -447,6 +462,7 @@ return {
   Int = Int,
   Number = Number,
   String = String,
+  CustomString = CustomString,
   Bool = Bool,
   Function = Function,
   Array = Array,
