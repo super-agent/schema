@@ -1,5 +1,7 @@
 # Luvit Schema Tool
 
+[![Build Status](https://travis-ci.org/super-agent/schema.svg?branch=master)](https://travis-ci.org/super-agent/schema)
+
 This library allows you to decorate public API functions with strict runtime
 typechecking.  You can declare the types using a clear declarative syntax
 using actual type object references (to enable extensibility).
