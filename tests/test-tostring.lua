@@ -1,3 +1,7 @@
+if not _G.process then
+  require 'luacov'
+  require 'lit-loader'
+end
 local Schema = require('../schema')
 local p = require('pretty-print').prettyPrint
 
