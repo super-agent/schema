@@ -4,6 +4,7 @@ if not _G.process then
 end
 local schema = require('../schema')
 local p = require('pretty-print').prettyPrint
+local unpack = table.unpack or unpack
 
 local Any = schema.Any
 local Truthy = schema.Truthy

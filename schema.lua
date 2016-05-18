@@ -16,6 +16,7 @@ local pack = table.pack or function (...)
   packed.n = select("#", ...)
   return packed
 end
+local unpack = table.unpack or unpack
 
 local function capitalize(name)
   return (name:gsub("^%l", string.upper))
@@ -161,6 +162,7 @@ local recordMeta = {
       parts[i] = k .. ": " .. tostring(v)
       i = i + 1
     end
+    table.sort(parts)
     return "{" .. concat(parts, ", ") .. "}"
   end,
   __call = function (self, name, value)

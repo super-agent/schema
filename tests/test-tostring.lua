@@ -36,7 +36,7 @@ test(String, "String")
 test(Bool, "Bool")
 test(Function, "Function")
 test(Array(Int), "Array<Int>")
-test({name=String,age=Int}, "{name: String, age: Int}")
+test({name=String,age=Int}, "{age: Int, name: String}")
 test({Bool,Int,Type}, "(Bool, Int, Type)")
 test(NamedTuple{
   {"a",Int},
