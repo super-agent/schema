@@ -20,9 +20,7 @@ before_install:
 
 script:
   - lua tests/test-tostring.lua
-  - if [[ "$LUA" != luvit-* ]]; then luacov; cat luacov.report.out; fi
   - lua tests/test-types.lua
-  - if [[ "$LUA" != luvit-* ]]; then luacov; cat luacov.report.out; fi
 
 
 notifications:
